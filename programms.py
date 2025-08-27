@@ -41,7 +41,39 @@ def init_db():
     cur.close()
     conn.close()
 
-LOGIN_PAGE = """ ... نفس كود الصفحة ... """
+
+# 🔑 صفحة تسجيل الدخول
+LOGIN_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>🔑 تسجيل الدخول</title>
+<style>
+body { font-family: Tahoma, sans-serif; background:#f4f4f4; direction: rtl; text-align: center; }
+form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+input { width:90%; padding:8px; margin:10px 0; }
+button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#0056b3; }
+.error { color:red; margin:10px 0; }
+</style>
+</head>
+<body>
+<h2>🔑 تسجيل الدخول</h2>
+<form method="post">
+    <input type="text" name="username" placeholder="👤 اسم المستخدم" required><br>
+    <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
+    {% if error %}
+        <p class="error">{{error}}</p>
+    {% endif %}
+    <button type="submit">➡ دخول</button>
+</form>
+</body>
+</html>
+"""
+
+
+# 🏠 الصفحة الرئيسية
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -109,6 +141,8 @@ a.button:hover { background:#0056b3; }
 </html>
 """
 
+
+# ✏ صفحة التعديل
 EDIT_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -131,6 +165,8 @@ EDIT_PAGE = """
 </html>
 """
 
+
+# 🔹 الراوتس
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -236,6 +272,7 @@ def delete(record_id):
     cur.close()
     conn.close()
     return redirect("/")
+
 
 if __name__ == "__main__":
     init_db()
