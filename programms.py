@@ -9,11 +9,9 @@ app.secret_key = "secretkey123"  # غيّرها لمفتاح أقوى للحما
 # 🔹 الاتصال مع PostgreSQL عبر Environment Variable
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
     return conn
-
 
 # 🔹 إنشاء الجداول إذا غير موجودة
 def init_db():
@@ -52,7 +50,6 @@ def init_db():
     cur.close()
     conn.close()
 
-
 # 🔹 صفحة تسجيل الدخول
 LOGIN_PAGE = """
 <!DOCTYPE html>
@@ -73,8 +70,7 @@ LOGIN_PAGE = """
 </html>
 """
 
-
-# 🔹 الصفحة الرئيسية
+# 🔹 الصفحة الرئيسية مع الصورة
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -83,6 +79,7 @@ HTML_PAGE = """
     <title>📋 العمليات</title>
     <style>
         body { font-family: "Tahoma", sans-serif; background: #fff; color: #222; direction: rtl; text-align: right; }
+        .header-img { width: 100%; max-height: 200px; object-fit: cover; display: block; margin-bottom: 20px; }
         table { border-collapse: collapse; width: 95%; margin: 20px auto; background:#fafafa; }
         table th, table td { border: 1px solid #666; padding: 8px; text-align: center; }
         form { margin:20px; background:#f4f4f4; padding:15px; border-radius:8px; }
@@ -91,6 +88,9 @@ HTML_PAGE = """
     </style>
 </head>
 <body>
+    <!-- الصورة الرأسية -->
+    <img src="{{ url_for('static', filename='header.jpg') }}" class="header-img">
+
     <h1>📋 بستان أبو غليون</h1>
     <p>مرحبًا {{session['user']}} | <a href="/logout">🚪 تسجيل خروج</a></p>
 
@@ -140,7 +140,6 @@ HTML_PAGE = """
 </html>
 """
 
-
 # 🔹 تسجيل الدخول
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -163,20 +162,17 @@ def login():
             return render_template_string(LOGIN_PAGE, error="❌ اسم المستخدم أو كلمة المرور غير صحيحة")
     return render_template_string(LOGIN_PAGE, error=None)
 
-
 # 🔹 تسجيل الخروج
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
 
-
 # 🔹 حماية الصفحات
 @app.before_request
 def require_login():
     if request.endpoint not in ["login", "static"] and not session.get("logged_in"):
         return redirect(url_for("login"))
-
 
 # 🔹 الصفحة الرئيسية
 @app.route("/")
@@ -213,7 +209,6 @@ def index():
         session=session
     )
 
-
 # 🔹 إضافة عملية
 @app.route("/add", methods=["POST"])
 def add():
@@ -236,7 +231,6 @@ def add():
     conn.close()
     return redirect("/")
 
-
 # 🔹 حذف عملية
 @app.route("/delete/<int:record_id>")
 def delete(record_id):
@@ -247,7 +241,6 @@ def delete(record_id):
     cur.close()
     conn.close()
     return redirect("/")
-
 
 if __name__ == "__main__":
     init_db()
