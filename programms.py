@@ -1,13 +1,15 @@
-from flask import Flask, request, redirect, render_template_string, session, url_for
+from flask import Flask, request, redirect, render_template_string, session, url_for, send_file
 import os
 import psycopg2
+import pandas as pd
 from datetime import datetime
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = "secretkey123"
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-ADMIN_PASSWORD = "mypassword123"  # كلمة المرور للتعديل والحذف
+ADMIN_PASSWORD = "mypassword123"
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
@@ -41,8 +43,7 @@ def init_db():
     cur.close()
     conn.close()
 
-
-# 🟢 صفحات HTML
+# ----- صفحات HTML -----
 LOGIN_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -68,6 +69,49 @@ button:hover { background:#0056b3; }
 </html>
 """
 
+PASSWORD_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head><meta charset="UTF-8"><title>🔑 تأكيد كلمة المرور</title>
+<style>
+body { font-family: Tahoma; background:#f4f4f4; direction: rtl; text-align:center; }
+form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+input { width:90%; padding:8px; margin:10px 0; }
+button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#0056b3; }
+.error { color:red; margin:10px 0; }
+</style>
+</head>
+<body>
+<h2>🔑 تأكيد كلمة المرور</h2>
+<form method="post">
+    <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
+    {% if error %}<p class="error">{{error}}</p>{% endif %}
+    <button type="submit">➡ تأكيد</button>
+</form>
+</body>
+</html>
+"""
+
+EDIT_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head><meta charset="UTF-8"><title>✏ تعديل العملية</title></head>
+<body>
+<h2>✏ تعديل العملية</h2>
+<form method="post">
+    اسم العملية: <input type="text" name="name" value="{{record[1]}}" required><br><br>
+    العدد: <input type="number" name="count" value="{{record[2]}}" required><br><br>
+    السعر (بالدولار): <input type="number" step="0.01" name="price" value="{{record[3]}}" required><br><br>
+    سعر الصرف: <input type="number" name="exchange_rate" value="{{record[6]}}" required><br><br>
+    التاريخ: <input type="date" name="date" value="{{record[7]}}" required><br><br>
+    <button type="submit">💾 حفظ التعديل</button>
+</form>
+<a href="/">⬅ العودة للصفحة الرئيسية</a>
+</body>
+</html>
+"""
+
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -79,8 +123,10 @@ table th, table td { border:1px solid #666; padding:8px; text-align:center; }
 form { margin:20px; background:#f4f4f4; padding:15px; border-radius:8px; }
 button { padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer; }
 button:hover { background:#218838; }
-a.button { padding:6px 12px; background:#007bff; color:#fff; border-radius:5px; text-decoration:none; }
+a.button { padding:6px 12px; background:#007bff; color:#fff; border-radius:5px; text-decoration:none; margin-right:5px;}
 a.button:hover { background:#0056b3; }
+.export-button { background:#17a2b8; }
+.export-button:hover { background:#117a8b; }
 </style>
 </head>
 <body>
@@ -96,6 +142,7 @@ a.button:hover { background:#0056b3; }
     سعر الصرف (ل.ل): <input type="number" name="exchange_rate" value="{{ last_rate }}" required><br><br>
     التاريخ: <input type="date" name="date" value="{{ today }}" required><br><br>
     <button type="submit">✅ إضافة</button>
+    <button formaction="/export_excel" formmethod="get" class="export-button">📤 تصدير Excel</button>
 </form>
 
 <h2>📑 السجلات</h2>
@@ -127,50 +174,7 @@ a.button:hover { background:#0056b3; }
 </html>
 """
 
-EDIT_PAGE = """
-<!DOCTYPE html>
-<html lang="ar">
-<head><meta charset="UTF-8"><title>✏ تعديل العملية</title></head>
-<body>
-<h2>✏ تعديل العملية</h2>
-<form method="post">
-    اسم العملية: <input type="text" name="name" value="{{record[1]}}" required><br><br>
-    العدد: <input type="number" name="count" value="{{record[2]}}" required><br><br>
-    السعر (بالدولار): <input type="number" step="0.01" name="price" value="{{record[3]}}" required><br><br>
-    سعر الصرف: <input type="number" name="exchange_rate" value="{{record[6]}}" required><br><br>
-    التاريخ: <input type="date" name="date" value="{{record[7]}}" required><br><br>
-    <button type="submit">💾 حفظ التعديل</button>
-</form>
-<a href="/">⬅ العودة للصفحة الرئيسية</a>
-</body>
-</html>
-"""
-
-PASSWORD_PAGE = """
-<!DOCTYPE html>
-<html lang="ar">
-<head><meta charset="UTF-8"><title>🔑 تأكيد كلمة المرور</title>
-<style>
-body { font-family: Tahoma; background:#f4f4f4; direction: rtl; text-align:center; }
-form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
-input { width:90%; padding:8px; margin:10px 0; }
-button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
-button:hover { background:#0056b3; }
-.error { color:red; margin:10px 0; }
-</style>
-</head>
-<body>
-<h2>🔑 تأكيد كلمة المرور</h2>
-<form method="post">
-    <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
-    {% if error %}<p class="error">{{error}}</p>{% endif %}
-    <button type="submit">➡ تأكيد</button>
-</form>
-</body>
-</html>
-"""
-
-# 🟢 الراوتس
+# ----- Routes -----
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method=="POST":
@@ -236,7 +240,6 @@ def add():
 
 @app.route("/edit/<int:record_id>",methods=["GET","POST"])
 def edit(record_id):
-    # تحقق كلمة المرور أولًا
     if not session.get(f"edit_pass_{record_id}"):
         if request.method=="POST":
             if request.form["password"]!=ADMIN_PASSWORD:
@@ -279,6 +282,16 @@ def delete(record_id):
         conn.commit(); cur.close(); conn.close()
         return redirect("/")
     return render_template_string(PASSWORD_PAGE,error=None)
+
+@app.route("/export_excel")
+def export_excel():
+    conn = get_db_connection()
+    df = pd.read_sql("SELECT * FROM operations ORDER BY date DESC", conn)
+    conn.close()
+    output = BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+    return send_file(output, download_name="operations.xlsx", as_attachment=True)
 
 if __name__=="__main__":
     init_db()
