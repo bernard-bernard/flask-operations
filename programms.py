@@ -42,13 +42,13 @@ def init_db():
     conn.close()
 
 
-# 🟢 صفحات HTML في متغيرات
+# 🟢 صفحات HTML
 LOGIN_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
 <head><meta charset="UTF-8"><title>🔑 تسجيل الدخول</title>
 <style>
-body { font-family: Tahoma; background:#f4f4f4; text-align: center; direction: rtl; }
+body { font-family: Tahoma; background:#f4f4f4; text-align:center; direction:rtl; }
 form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
 input { width:90%; padding:8px; margin:10px 0; }
 button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;}
@@ -73,7 +73,7 @@ HTML_PAGE = """
 <html lang="ar">
 <head><meta charset="UTF-8"><title>📋 العمليات</title>
 <style>
-body { font-family: Tahoma; direction: rtl; text-align: right; background:#fff; color:#222; }
+body { font-family: Tahoma; direction:rtl; text-align:right; background:#fff; color:#222; }
 table { border-collapse: collapse; width:95%; margin:20px auto; background:#fafafa; }
 table th, table td { border:1px solid #666; padding:8px; text-align:center; }
 form { margin:20px; background:#f4f4f4; padding:15px; border-radius:8px; }
@@ -139,7 +139,6 @@ EDIT_PAGE = """
     السعر (بالدولار): <input type="number" step="0.01" name="price" value="{{record[3]}}" required><br><br>
     سعر الصرف: <input type="number" name="exchange_rate" value="{{record[6]}}" required><br><br>
     التاريخ: <input type="date" name="date" value="{{record[7]}}" required><br><br>
-    {% if password_required %}<input type="password" name="password" placeholder="🔒 كلمة المرور" required><br><br>{% endif %}
     <button type="submit">💾 حفظ التعديل</button>
 </form>
 <a href="/">⬅ العودة للصفحة الرئيسية</a>
@@ -152,7 +151,7 @@ PASSWORD_PAGE = """
 <html lang="ar">
 <head><meta charset="UTF-8"><title>🔑 تأكيد كلمة المرور</title>
 <style>
-body { font-family: Tahoma; background:#f4f4f4; direction: rtl; text-align: center; }
+body { font-family: Tahoma; background:#f4f4f4; direction: rtl; text-align:center; }
 form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
 input { width:90%; padding:8px; margin:10px 0; }
 button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
@@ -172,22 +171,22 @@ button:hover { background:#0056b3; }
 """
 
 # 🟢 الراوتس
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
-    if request.method == "POST":
+    if request.method=="POST":
         username = request.form["username"]
         password = request.form["password"]
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s",(username,password))
         user = cur.fetchone()
         cur.close(); conn.close()
         if user:
-            session["logged_in"] = True
-            session["user"] = username
+            session["logged_in"]=True
+            session["user"]=username
             return redirect("/")
-        return render_template_string(LOGIN_PAGE, error="❌ اسم المستخدم أو كلمة المرور غير صحيحة")
-    return render_template_string(LOGIN_PAGE, error=None)
+        return render_template_string(LOGIN_PAGE,error="❌ اسم المستخدم أو كلمة المرور غير صحيحة")
+    return render_template_string(LOGIN_PAGE,error=None)
 
 @app.route("/logout")
 def logout():
@@ -196,7 +195,7 @@ def logout():
 
 @app.before_request
 def require_login():
-    if request.endpoint not in ["login", "static"] and not session.get("logged_in"):
+    if request.endpoint not in ["login","static"] and not session.get("logged_in"):
         return redirect(url_for("login"))
 
 @app.route("/")
@@ -205,7 +204,7 @@ def index():
     cur = conn.cursor()
     cur.execute("SELECT * FROM operations ORDER BY date DESC")
     rows = cur.fetchall()
-    cur.execute("SELECT SUM(total_usd), SUM(total_lbp) FROM operations")
+    cur.execute("SELECT SUM(total_usd),SUM(total_lbp) FROM operations")
     result = cur.fetchone()
     grand_total_usd = result[0] or 0
     grand_total_lbp = result[1] or 0
@@ -215,65 +214,72 @@ def index():
     row = cur.fetchone()
     last_rate = row[0] if row else 89000
     cur.close(); conn.close()
-    return render_template_string(HTML_PAGE, records=rows, grand_total_usd=grand_total_usd,
-                                  grand_total_lbp=grand_total_lbp, unique_ops=unique_ops,
-                                  last_rate=last_rate, today=datetime.now().strftime("%Y-%m-%d"), session=session)
+    return render_template_string(HTML_PAGE,records=rows,grand_total_usd=grand_total_usd,
+                                  grand_total_lbp=grand_total_lbp,unique_ops=unique_ops,
+                                  last_rate=last_rate,today=datetime.now().strftime("%Y-%m-%d"),session=session)
 
-@app.route("/add", methods=["POST"])
+@app.route("/add",methods=["POST"])
 def add():
     name = request.form["name"]
     count = int(request.form["count"])
     price_usd = float(request.form["price"])
     exchange_rate = float(request.form["exchange_rate"])
     date = request.form["date"]
-    total_usd = count * price_usd
-    total_lbp = total_usd * exchange_rate
+    total_usd = count*price_usd
+    total_lbp = total_usd*exchange_rate
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""INSERT INTO operations(name,count,price_usd,total_usd,total_lbp,exchange_rate,date)
-                   VALUES(%s,%s,%s,%s,%s,%s,%s)""",
-                (name,count,price_usd,total_usd,total_lbp,exchange_rate,date))
+                   VALUES(%s,%s,%s,%s,%s,%s,%s)""",(name,count,price_usd,total_usd,total_lbp,exchange_rate,date))
     conn.commit(); cur.close(); conn.close()
     return redirect("/")
 
-@app.route("/edit/<int:record_id>", methods=["GET", "POST"])
+@app.route("/edit/<int:record_id>",methods=["GET","POST"])
 def edit(record_id):
+    # تحقق كلمة المرور أولًا
+    if not session.get(f"edit_pass_{record_id}"):
+        if request.method=="POST":
+            if request.form["password"]!=ADMIN_PASSWORD:
+                return render_template_string(PASSWORD_PAGE,error="❌ كلمة المرور خاطئة")
+            session[f"edit_pass_{record_id}"]=True
+            return redirect(f"/edit/{record_id}")
+        return render_template_string(PASSWORD_PAGE,error=None)
+
     conn = get_db_connection()
     cur = conn.cursor()
-    if request.method == "POST":
-        if "password" in request.form and request.form["password"] != ADMIN_PASSWORD:
-            return render_template_string(EDIT_PAGE, record={"dummy":None}, password_required=True, error="❌ كلمة المرور خاطئة")
+    if request.method=="POST":
         name = request.form["name"]
         count = int(request.form["count"])
         price_usd = float(request.form["price"])
         exchange_rate = float(request.form["exchange_rate"])
         date = request.form["date"]
-        total_usd = count * price_usd
-        total_lbp = total_usd * exchange_rate
+        total_usd = count*price_usd
+        total_lbp = total_usd*exchange_rate
         cur.execute("""UPDATE operations SET name=%s,count=%s,price_usd=%s,total_usd=%s,
                        total_lbp=%s,exchange_rate=%s,date=%s WHERE id=%s""",
                     (name,count,price_usd,total_usd,total_lbp,exchange_rate,date,record_id))
         conn.commit()
         cur.close(); conn.close()
+        session.pop(f"edit_pass_{record_id}",None)
         return redirect("/")
     else:
-        cur.execute("SELECT * FROM operations WHERE id=%s", (record_id,))
+        cur.execute("SELECT * FROM operations WHERE id=%s",(record_id,))
         record = cur.fetchone()
         cur.close(); conn.close()
-        return render_template_string(EDIT_PAGE, record=record, password_required=True)
+        return render_template_string(EDIT_PAGE,record=record)
 
-@app.route("/delete/<int:record_id>", methods=["GET", "POST"])
+@app.route("/delete/<int:record_id>",methods=["GET","POST"])
 def delete(record_id):
-    if request.method == "POST":
-        if request.form["password"] != ADMIN_PASSWORD:
-            return render_template_string(PASSWORD_PAGE, error="❌ كلمة المرور خاطئة")
+    if request.method=="POST":
+        if request.form["password"]!=ADMIN_PASSWORD:
+            return render_template_string(PASSWORD_PAGE,error="❌ كلمة المرور خاطئة")
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM operations WHERE id=%s", (record_id,))
+        cur.execute("DELETE FROM operations WHERE id=%s",(record_id,))
         conn.commit(); cur.close(); conn.close()
         return redirect("/")
-    return render_template_string(PASSWORD_PAGE, error=None)
+    return render_template_string(PASSWORD_PAGE,error=None)
 
-if __name__ == "__main__":
+if __name__=="__main__":
     init_db()
     app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
