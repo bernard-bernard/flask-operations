@@ -1,9 +1,7 @@
-from flask import Flask, request, redirect, render_template_string, session, url_for, send_file
+from flask import Flask, request, redirect, render_template_string, session, url_for
 import os
 import psycopg2
 from datetime import datetime
-import pandas as pd
-from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = "secretkey123"
@@ -43,6 +41,7 @@ def init_db():
     cur.close()
     conn.close()
 
+
 # 🔑 صفحة تسجيل الدخول
 LOGIN_PAGE = """
 <!DOCTYPE html>
@@ -73,7 +72,7 @@ button:hover { background:#0056b3; }
 </html>
 """
 
-# 🏠 الصفحة الرئيسية مع زر تصدير Excel
+# 🏠 الصفحة الرئيسية
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -89,8 +88,6 @@ button { padding:6px 12px; background:#28a745; color:#fff; border:none; border-r
 button:hover { background:#218838; }
 a.button { padding:6px 12px; background:#007bff; color:#fff; border-radius:5px; text-decoration:none; }
 a.button:hover { background:#0056b3; }
-.export-btn { background:#17a2b8; color:#fff; margin-bottom:10px; }
-.export-btn:hover { background:#138496; }
 </style>
 </head>
 <body>
@@ -111,10 +108,6 @@ a.button:hover { background:#0056b3; }
     سعر الصرف (ل.ل): <input type="number" name="exchange_rate" value="{{ last_rate }}" required><br><br>
     التاريخ: <input type="date" name="date" value="{{ today }}" required><br><br>
     <button type="submit">✅ إضافة</button>
-</form>
-
-<form action="/export" method="get" style="text-align:center; margin-bottom:10px;">
-    <button type="submit" class="export-btn">📤 تصدير إلى Excel</button>
 </form>
 
 <h2>📑 السجلات</h2>
@@ -319,23 +312,6 @@ def delete(record_id):
         return redirect("/")
 
     return render_template_string(PASSWORD_PAGE, error=None)
-
-# 🚀 Route لتصدير Excel
-@app.route("/export")
-def export():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM operations ORDER BY date DESC")
-    rows = cur.fetchall()
-    columns = [desc[0] for desc in cur.description]
-    df = pd.DataFrame(rows, columns=columns)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Operations')
-    output.seek(0)
-    cur.close()
-    conn.close()
-    return send_file(output, download_name="operations.xlsx", as_attachment=True)
 
 if __name__ == "__main__":
     init_db()
