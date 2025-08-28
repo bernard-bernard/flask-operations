@@ -42,18 +42,16 @@ def init_db():
     conn.close()
 
 
-# 🔑 صفحة تسجيل الدخول
+# 🟢 صفحات HTML في متغيرات
 LOGIN_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>🔑 تسجيل الدخول</title>
+<head><meta charset="UTF-8"><title>🔑 تسجيل الدخول</title>
 <style>
-body { font-family: Tahoma, sans-serif; background:#f4f4f4; direction: rtl; text-align: center; }
-form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+body { font-family: Tahoma; background:#f4f4f4; text-align: center; direction: rtl; }
+form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
 input { width:90%; padding:8px; margin:10px 0; }
-button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
+button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;}
 button:hover { background:#0056b3; }
 .error { color:red; margin:10px 0; }
 </style>
@@ -63,26 +61,21 @@ button:hover { background:#0056b3; }
 <form method="post">
     <input type="text" name="username" placeholder="👤 اسم المستخدم" required><br>
     <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
-    {% if error %}
-        <p class="error">{{error}}</p>
-    {% endif %}
+    {% if error %}<p class="error">{{error}}</p>{% endif %}
     <button type="submit">➡ دخول</button>
 </form>
 </body>
 </html>
 """
 
-# 🏠 الصفحة الرئيسية
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>📋 العمليات</title>
+<head><meta charset="UTF-8"><title>📋 العمليات</title>
 <style>
-body { font-family: "Tahoma", sans-serif; background: #fff; color: #222; direction: rtl; text-align: right; }
-table { border-collapse: collapse; width: 95%; margin: 20px auto; background:#fafafa; }
-table th, table td { border: 1px solid #666; padding: 8px; text-align: center; }
+body { font-family: Tahoma; direction: rtl; text-align: right; background:#fff; color:#222; }
+table { border-collapse: collapse; width:95%; margin:20px auto; background:#fafafa; }
+table th, table td { border:1px solid #666; padding:8px; text-align:center; }
 form { margin:20px; background:#f4f4f4; padding:15px; border-radius:8px; }
 button { padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer; }
 button:hover { background:#218838; }
@@ -97,12 +90,7 @@ a.button:hover { background:#0056b3; }
 <form action="/add" method="post">
     اسم العملية:
     <input list="ops" name="name">
-    <datalist id="ops">
-        {% for op in unique_ops %}
-        <option value="{{op}}">
-        {% endfor %}
-    </datalist><br><br>
-
+    <datalist id="ops">{% for op in unique_ops %}<option value="{{op}}">{% endfor %}</datalist><br><br>
     العدد: <input type="number" name="count" value="1" required><br><br>
     السعر (بالدولار): <input type="number" step="0.01" name="price" required><br><br>
     سعر الصرف (ل.ل): <input type="number" name="exchange_rate" value="{{ last_rate }}" required><br><br>
@@ -127,7 +115,7 @@ a.button:hover { background:#0056b3; }
 <td>{{"{:,.0f}".format(e[6])}}</td>
 <td>{{e[7]}}</td>
 <td><a class="button" href="/edit/{{e[0]}}">✏ تعديل</a></td>
-<td><a class="button" style="background:#dc3545" href="/delete/{{e[0]}}" onclick="return confirm('هل أنت متأكد من الحذف؟');">🗑 حذف</a></td>
+<td><a class="button" style="background:#dc3545" href="/delete/{{e[0]}}">🗑 حذف</a></td>
 </tr>
 {% endfor %}
 </table>
@@ -139,14 +127,10 @@ a.button:hover { background:#0056b3; }
 </html>
 """
 
-# ✏ صفحة التعديل
 EDIT_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>✏ تعديل العملية</title>
-</head>
+<head><meta charset="UTF-8"><title>✏ تعديل العملية</title></head>
 <body>
 <h2>✏ تعديل العملية</h2>
 <form method="post">
@@ -155,6 +139,7 @@ EDIT_PAGE = """
     السعر (بالدولار): <input type="number" step="0.01" name="price" value="{{record[3]}}" required><br><br>
     سعر الصرف: <input type="number" name="exchange_rate" value="{{record[6]}}" required><br><br>
     التاريخ: <input type="date" name="date" value="{{record[7]}}" required><br><br>
+    {% if password_required %}<input type="password" name="password" placeholder="🔒 كلمة المرور" required><br><br>{% endif %}
     <button type="submit">💾 حفظ التعديل</button>
 </form>
 <a href="/">⬅ العودة للصفحة الرئيسية</a>
@@ -162,15 +147,12 @@ EDIT_PAGE = """
 </html>
 """
 
-# 🔑 صفحة كلمة المرور للتأكيد
 PASSWORD_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>🔑 تأكيد كلمة المرور</title>
+<head><meta charset="UTF-8"><title>🔑 تأكيد كلمة المرور</title>
 <style>
-body { font-family: Tahoma, sans-serif; background:#f4f4f4; direction: rtl; text-align: center; }
+body { font-family: Tahoma; background:#f4f4f4; direction: rtl; text-align: center; }
 form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
 input { width:90%; padding:8px; margin:10px 0; }
 button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
@@ -182,16 +164,14 @@ button:hover { background:#0056b3; }
 <h2>🔑 تأكيد كلمة المرور</h2>
 <form method="post">
     <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
-    {% if error %}
-        <p class="error">{{error}}</p>
-    {% endif %}
+    {% if error %}<p class="error">{{error}}</p>{% endif %}
     <button type="submit">➡ تأكيد</button>
 </form>
 </body>
 </html>
 """
 
-# 🔹 الراوتس
+# 🟢 الراوتس
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -201,8 +181,7 @@ def login():
         cur = conn.cursor()
         cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
         user = cur.fetchone()
-        cur.close()
-        conn.close()
+        cur.close(); conn.close()
         if user:
             session["logged_in"] = True
             session["user"] = username
@@ -235,13 +214,10 @@ def index():
     cur.execute("SELECT exchange_rate FROM operations ORDER BY id DESC LIMIT 1")
     row = cur.fetchone()
     last_rate = row[0] if row else 89000
-    cur.close()
-    conn.close()
-    return render_template_string(
-        HTML_PAGE, records=rows, grand_total_usd=grand_total_usd,
-        grand_total_lbp=grand_total_lbp, unique_ops=unique_ops,
-        last_rate=last_rate, today=datetime.now().strftime("%Y-%m-%d"), session=session
-    )
+    cur.close(); conn.close()
+    return render_template_string(HTML_PAGE, records=rows, grand_total_usd=grand_total_usd,
+                                  grand_total_lbp=grand_total_lbp, unique_ops=unique_ops,
+                                  last_rate=last_rate, today=datetime.now().strftime("%Y-%m-%d"), session=session)
 
 @app.route("/add", methods=["POST"])
 def add():
@@ -255,27 +231,18 @@ def add():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""INSERT INTO operations(name,count,price_usd,total_usd,total_lbp,exchange_rate,date)
-                    VALUES(%s,%s,%s,%s,%s,%s,%s)""",
-                (name, count, price_usd, total_usd, total_lbp, exchange_rate, date))
-    conn.commit()
-    cur.close()
-    conn.close()
+                   VALUES(%s,%s,%s,%s,%s,%s,%s)""",
+                (name,count,price_usd,total_usd,total_lbp,exchange_rate,date))
+    conn.commit(); cur.close(); conn.close()
     return redirect("/")
 
 @app.route("/edit/<int:record_id>", methods=["GET", "POST"])
 def edit(record_id):
-    if request.method == "POST" and "password" in request.form:
-        if request.form["password"] != ADMIN_PASSWORD:
-            return render_template_string(PASSWORD_PAGE, error="❌ كلمة المرور خاطئة")
-        session["edit_pass"] = True
-        return redirect(f"/edit/{record_id}")
-
-    if not session.get("edit_pass"):
-        return render_template_string(PASSWORD_PAGE, error=None)
-
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == "POST":
+        if "password" in request.form and request.form["password"] != ADMIN_PASSWORD:
+            return render_template_string(EDIT_PAGE, record={"dummy":None}, password_required=True, error="❌ كلمة المرور خاطئة")
         name = request.form["name"]
         count = int(request.form["count"])
         price_usd = float(request.form["price"])
@@ -283,20 +250,17 @@ def edit(record_id):
         date = request.form["date"]
         total_usd = count * price_usd
         total_lbp = total_usd * exchange_rate
-        cur.execute("""UPDATE operations SET name=%s, count=%s, price_usd=%s, total_usd=%s,
-                       total_lbp=%s, exchange_rate=%s, date=%s WHERE id=%s""",
-                    (name, count, price_usd, total_usd, total_lbp, exchange_rate, date, record_id))
+        cur.execute("""UPDATE operations SET name=%s,count=%s,price_usd=%s,total_usd=%s,
+                       total_lbp=%s,exchange_rate=%s,date=%s WHERE id=%s""",
+                    (name,count,price_usd,total_usd,total_lbp,exchange_rate,date,record_id))
         conn.commit()
-        cur.close()
-        conn.close()
-        session.pop("edit_pass", None)
+        cur.close(); conn.close()
         return redirect("/")
     else:
         cur.execute("SELECT * FROM operations WHERE id=%s", (record_id,))
         record = cur.fetchone()
-        cur.close()
-        conn.close()
-        return render_template_string(EDIT_PAGE, record=record)
+        cur.close(); conn.close()
+        return render_template_string(EDIT_PAGE, record=record, password_required=True)
 
 @app.route("/delete/<int:record_id>", methods=["GET", "POST"])
 def delete(record_id):
@@ -306,11 +270,8 @@ def delete(record_id):
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("DELETE FROM operations WHERE id=%s", (record_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
+        conn.commit(); cur.close(); conn.close()
         return redirect("/")
-
     return render_template_string(PASSWORD_PAGE, error=None)
 
 if __name__ == "__main__":
