@@ -41,13 +41,157 @@ def init_db():
     cur.close()
     conn.close()
 
-# صفحات HTML
-LOGIN_PAGE = """..."""   # ضع هنا صفحة تسجيل الدخول من الكود السابق
-HTML_PAGE = """..."""    # ضع هنا الصفحة الرئيسية من الكود السابق
-EDIT_PAGE = """..."""    # ضع هنا صفحة التعديل من الكود السابق
-PASSWORD_PAGE = """...""" # صفحة طلب كلمة المرور
 
-# تسجيل الدخول والخروج
+# 🔑 صفحة تسجيل الدخول
+LOGIN_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>🔑 تسجيل الدخول</title>
+<style>
+body { font-family: Tahoma, sans-serif; background:#f4f4f4; direction: rtl; text-align: center; }
+form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+input { width:90%; padding:8px; margin:10px 0; }
+button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#0056b3; }
+.error { color:red; margin:10px 0; }
+</style>
+</head>
+<body>
+<h2>🔑 تسجيل الدخول</h2>
+<form method="post">
+    <input type="text" name="username" placeholder="👤 اسم المستخدم" required><br>
+    <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
+    {% if error %}
+        <p class="error">{{error}}</p>
+    {% endif %}
+    <button type="submit">➡ دخول</button>
+</form>
+</body>
+</html>
+"""
+
+# 🏠 الصفحة الرئيسية
+HTML_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>📋 العمليات</title>
+<style>
+body { font-family: "Tahoma", sans-serif; background: #fff; color: #222; direction: rtl; text-align: right; }
+table { border-collapse: collapse; width: 95%; margin: 20px auto; background:#fafafa; }
+table th, table td { border: 1px solid #666; padding: 8px; text-align: center; }
+form { margin:20px; background:#f4f4f4; padding:15px; border-radius:8px; }
+button { padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#218838; }
+a.button { padding:6px 12px; background:#007bff; color:#fff; border-radius:5px; text-decoration:none; }
+a.button:hover { background:#0056b3; }
+</style>
+</head>
+<body>
+<h1>📋 بستان أبو غليون</h1>
+<p>مرحبًا {{session['user']}} | <a href="/logout">🚪 تسجيل خروج</a></p>
+
+<form action="/add" method="post">
+    اسم العملية:
+    <input list="ops" name="name">
+    <datalist id="ops">
+        {% for op in unique_ops %}
+        <option value="{{op}}">
+        {% endfor %}
+    </datalist><br><br>
+
+    العدد: <input type="number" name="count" value="1" required><br><br>
+    السعر (بالدولار): <input type="number" step="0.01" name="price" required><br><br>
+    سعر الصرف (ل.ل): <input type="number" name="exchange_rate" value="{{ last_rate }}" required><br><br>
+    التاريخ: <input type="date" name="date" value="{{ today }}" required><br><br>
+    <button type="submit">✅ إضافة</button>
+</form>
+
+<h2>📑 السجلات</h2>
+<table>
+<tr>
+<th>الرقم</th><th>اسم العملية</th><th>العدد</th><th>السعر ($)</th><th>المجموع ($)</th>
+<th>المجموع (ل.ل)</th><th>سعر الصرف</th><th>التاريخ</th><th>تعديل</th><th>حذف</th>
+</tr>
+{% for e in records %}
+<tr>
+<td>{{ loop.index }}</td>
+<td>{{e[1]}}</td>
+<td>{{e[2]}}</td>
+<td>{{"%.2f"|format(e[3])}}</td>
+<td>{{"%.2f"|format(e[4])}}</td>
+<td>{{"{:,.0f}".format(e[5])}}</td>
+<td>{{"{:,.0f}".format(e[6])}}</td>
+<td>{{e[7]}}</td>
+<td><a class="button" href="/edit/{{e[0]}}">✏ تعديل</a></td>
+<td><a class="button" style="background:#dc3545" href="/delete/{{e[0]}}" onclick="return confirm('هل أنت متأكد من الحذف؟');">🗑 حذف</a></td>
+</tr>
+{% endfor %}
+</table>
+
+<h2>🔢 المجموع الكلي:</h2>
+<p>💵 بالدولار: {{ "%.2f"|format(grand_total_usd) }} $</p>
+<p>💰 بالليرة اللبنانية: {{ "{:,.0f}".format(grand_total_lbp) }} ل.ل</p>
+</body>
+</html>
+"""
+
+# ✏ صفحة التعديل
+EDIT_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>✏ تعديل العملية</title>
+</head>
+<body>
+<h2>✏ تعديل العملية</h2>
+<form method="post">
+    اسم العملية: <input type="text" name="name" value="{{record[1]}}" required><br><br>
+    العدد: <input type="number" name="count" value="{{record[2]}}" required><br><br>
+    السعر (بالدولار): <input type="number" step="0.01" name="price" value="{{record[3]}}" required><br><br>
+    سعر الصرف: <input type="number" name="exchange_rate" value="{{record[6]}}" required><br><br>
+    التاريخ: <input type="date" name="date" value="{{record[7]}}" required><br><br>
+    <button type="submit">💾 حفظ التعديل</button>
+</form>
+<a href="/">⬅ العودة للصفحة الرئيسية</a>
+</body>
+</html>
+"""
+
+# 🔑 صفحة كلمة المرور للتأكيد
+PASSWORD_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>🔑 تأكيد كلمة المرور</title>
+<style>
+body { font-family: Tahoma, sans-serif; background:#f4f4f4; direction: rtl; text-align: center; }
+form { background:#fff; padding:20px; margin:50px auto; width:300px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+input { width:90%; padding:8px; margin:10px 0; }
+button { background:#007bff; color:#fff; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#0056b3; }
+.error { color:red; margin:10px 0; }
+</style>
+</head>
+<body>
+<h2>🔑 تأكيد كلمة المرور</h2>
+<form method="post">
+    <input type="password" name="password" placeholder="🔒 كلمة المرور" required><br>
+    {% if error %}
+        <p class="error">{{error}}</p>
+    {% endif %}
+    <button type="submit">➡ تأكيد</button>
+</form>
+</body>
+</html>
+"""
+
+# 🔹 الراوتس
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -76,7 +220,6 @@ def require_login():
     if request.endpoint not in ["login", "static"] and not session.get("logged_in"):
         return redirect(url_for("login"))
 
-# الصفحة الرئيسية
 @app.route("/")
 def index():
     conn = get_db_connection()
@@ -100,7 +243,6 @@ def index():
         last_rate=last_rate, today=datetime.now().strftime("%Y-%m-%d"), session=session
     )
 
-# إضافة عملية
 @app.route("/add", methods=["POST"])
 def add():
     name = request.form["name"]
@@ -120,7 +262,6 @@ def add():
     conn.close()
     return redirect("/")
 
-# تعديل العملية مع كلمة مرور
 @app.route("/edit/<int:record_id>", methods=["GET", "POST"])
 def edit(record_id):
     if request.method == "POST" and "password" in request.form:
@@ -157,7 +298,6 @@ def edit(record_id):
         conn.close()
         return render_template_string(EDIT_PAGE, record=record)
 
-# حذف العملية مع كلمة مرور
 @app.route("/delete/<int:record_id>", methods=["GET", "POST"])
 def delete(record_id):
     if request.method == "POST":
