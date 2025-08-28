@@ -127,9 +127,14 @@ a.button { padding:6px 12px; background:#007bff; color:#fff; border-radius:5px; 
 a.button:hover { background:#0056b3; }
 .export-button { background:#17a2b8; }
 .export-button:hover { background:#117a8b; }
+.header-img { width:100%; max-height:200px; object-fit:cover; border-bottom:2px solid #333; }
 </style>
 </head>
 <body>
+
+<!-- صورة الهيدر -->
+<img src="{{ url_for('static', filename='header.jpg') }}" alt="Header" class="header-img">
+
 <h1>📋 بستان أبو غليون</h1>
 <p>مرحبًا {{session['user']}} | <a href="/logout">🚪 تسجيل خروج</a></p>
 
